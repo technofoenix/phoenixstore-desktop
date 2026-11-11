@@ -1,0 +1,5 @@
+[
+  { "code": "ar", "name": "العربية", "dir": "rtl", "font": "IBMPlexSansArabic" },
+  { "code": "fr", "name": "Français", "dir": "ltr", "font": "Inter" },
+  { "code": "en", "name": "English", "dir": "ltr", "font": "Inter" }
+]
