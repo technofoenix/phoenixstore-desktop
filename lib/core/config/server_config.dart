@@ -17,8 +17,8 @@ class ServerConfig {
   /// env file fails loudly instead of silently pointing at localhost.
   static String get defaultBaseUrl => _envBaseUrl.isNotEmpty
       ? _envBaseUrl
-      // : (kReleaseMode ? '' : 'https://phoenixapistore.dpdns.org');
-      : (kReleaseMode ? '' : 'http://localhost:4000');
+      : (kReleaseMode ? '' : 'https://phoenixapistore.dpdns.org');
+      // : (kReleaseMode ? '' : 'http://localhost:4000');
 
   static String _baseUrl = normalize(defaultBaseUrl);
 
