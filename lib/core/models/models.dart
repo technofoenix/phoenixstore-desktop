@@ -625,6 +625,7 @@ class StockItem {
 
 class OrderLineResult {
   const OrderLineResult({
+    this.productId = '',
     required this.title,
     required this.sku,
     required this.quantity,
@@ -633,10 +634,14 @@ class OrderLineResult {
     required this.totalPrice,
   });
 
+  final String productId;
   final String title;
   final String sku;
   final int quantity;
   final int receivedQuantity;
+
+  /// Units still owed by the wholesaler on this line.
+  int get remaining => (quantity - receivedQuantity).clamp(0, quantity);
   final double unitPrice;
   final double totalPrice;
 
@@ -645,6 +650,7 @@ class OrderLineResult {
         ? <String, dynamic>{}
         : _asMap(json['product']);
     return OrderLineResult(
+      productId: json['productId'] as String? ?? product['id'] as String? ?? '',
       title: product['title'] as String? ?? '',
       sku: product['sku'] as String? ?? '',
       quantity: (json['quantity'] as num?)?.toInt() ?? 0,

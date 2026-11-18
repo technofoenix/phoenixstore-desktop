@@ -99,7 +99,8 @@
       "VALIDATION_ERROR": "Certaines informations ne sont pas valides.",
       "INTERNAL_ERROR": "Le serveur a rencontré un problème. Réessayez dans un instant.",
       "CONFLICT": "Cet enregistrement existe déjà."
-    }
+    },
+    "receptionMaybeRecorded": "Problème réseau : la réception est peut-être déjà enregistrée. Appuyez à nouveau sur Réceptionner pour confirmer ; elle ne sera pas comptée deux fois."
   },
   "payment": {
     "CASH": "Espèces",
@@ -315,7 +316,13 @@
     "printOrder": "Imprimer le bon de commande",
     "mainStock": "Dépôt principal : {count}",
     "mainStockOut": "Rupture au dépôt principal",
-    "mainStockLimit": "Il ne reste que {count} au dépôt principal pour {name}."
+    "mainStockLimit": "Il ne reste que {count} au dépôt principal pour {name}.",
+    "receive": "Réceptionner",
+    "receiveTitle": "Réception de la commande {code}",
+    "receiveHint": "Comptez ce qui est arrivé. Les quantités entrent dans le stock de cette boutique.",
+    "receiveRemaining": "{sku} · {remaining} sur {ordered} restant à recevoir",
+    "receiveConfirm": "Réceptionner {count} articles",
+    "received": "Commande {code} réceptionnée, stock mis à jour"
   },
   "charges": {
     "title": "Charges de la boutique",

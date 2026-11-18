@@ -223,6 +223,32 @@ class DesktopApi {
     return OrderResult.fromJson(_data(response));
   }
 
+  /// Receives (part of) an approved order into the boutique's stock.
+  /// [clientReference] is minted once per dialog, so a retry after a timeout
+  /// never receives twice. Returns the reception reference (POS_REC-…).
+  Future<String> receiveOrder({
+    required String clientReference,
+    required String warehouseId,
+    required String orderId,
+    required Map<String, int> quantities,
+  }) async {
+    final response = await _dio.post(
+      '/api/v1/desktop/receptions',
+      queryParameters: {'warehouseId': warehouseId},
+      data: {
+        'clientReference': clientReference,
+        'orderId': orderId,
+        'source': 'ORDER',
+        'lines': [
+          for (final entry in quantities.entries)
+            if (entry.value > 0)
+              {'productId': entry.key, 'quantity': entry.value},
+        ],
+      },
+    );
+    return _data(response)['reference'] as String? ?? '';
+  }
+
   Future<List<SaleResult>> sales({
     String? warehouseId,
     int page = 1,

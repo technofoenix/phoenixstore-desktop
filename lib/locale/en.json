@@ -99,7 +99,8 @@
       "VALIDATION_ERROR": "Some information is not valid.",
       "INTERNAL_ERROR": "The server had a problem processing this request. Try again in a moment.",
       "CONFLICT": "This record already exists."
-    }
+    },
+    "receptionMaybeRecorded": "Network problem: the reception may already be saved. Press Receive again to confirm; it will not be counted twice."
   },
   "payment": {
     "CASH": "Cash",
@@ -315,7 +316,13 @@
     "printOrder": "Print purchase order",
     "mainStock": "Main warehouse: {count}",
     "mainStockOut": "Out of stock in main warehouse",
-    "mainStockLimit": "Only {count} left in the main warehouse for {name}."
+    "mainStockLimit": "Only {count} left in the main warehouse for {name}.",
+    "receive": "Receive products",
+    "receiveTitle": "Receive order {code}",
+    "receiveHint": "Count what arrived. Quantities go into this boutique's stock.",
+    "receiveRemaining": "{sku} · {remaining} of {ordered} still to receive",
+    "receiveConfirm": "Receive {count} items",
+    "received": "Order {code} received, stock updated"
   },
   "charges": {
     "title": "Boutique charges",

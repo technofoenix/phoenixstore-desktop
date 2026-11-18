@@ -90,12 +90,39 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       order.lines.fold<int>(0, (sum, line) => sum + line.quantity);
 
   Future<void> _openDetails(OrderResult order) async {
-    final print = await showDialog<bool>(
+    final action = await showDialog<_OrderAction>(
       context: context,
       builder: (_) =>
           _OrderDetailsDialog(order: order, tone: _statusTone(order.status)),
     );
-    if (print == true) await _printOrder(order);
+    switch (action) {
+      case _OrderAction.print:
+        await _printOrder(order);
+      case _OrderAction.receive:
+        await _receiveOrder(order);
+      case null:
+        break;
+    }
+  }
+
+  Future<void> _receiveOrder(OrderResult order) async {
+    final reference = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) =>
+          _ReceiveOrderDialog(order: order, warehouseId: widget.warehouseId),
+    );
+    if (reference == null) return;
+    await _load();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.tr('orders.received', namedArgs: {'code': ltr(order.code)}),
+          ),
+        ),
+      );
+    }
   }
 
   /// The boutique orders from the wholesaler: the wholesaler (company
@@ -786,6 +813,7 @@ class _OrderDetailsDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
+    final receivable = _isReceivable(order);
     return AppDialog(
       width: 760,
       icon: Icons.local_shipping_rounded,
@@ -867,15 +895,183 @@ class _OrderDetailsDialog extends StatelessWidget {
           ),
         ],
       ),
+      secondary: receivable
+          ? TextButton.icon(
+              key: const ValueKey('order-details.print'),
+              onPressed: () => Navigator.of(context).pop(_OrderAction.print),
+              icon: const Icon(Icons.print_rounded, size: 18),
+              label: Text(context.tr('orders.printOrder')),
+            )
+          : TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(context.tr('common.close')),
+            ),
+      primary: receivable
+          ? FilledButton.icon(
+              key: const ValueKey('order-details.receive'),
+              onPressed: () => Navigator.of(context).pop(_OrderAction.receive),
+              icon: const Icon(Icons.inventory_2_rounded, size: 18),
+              label: Text(context.tr('orders.receive')),
+            )
+          : FilledButton.icon(
+              key: const ValueKey('order-details.print'),
+              onPressed: () => Navigator.of(context).pop(_OrderAction.print),
+              icon: const Icon(Icons.print_rounded, size: 18),
+              label: Text(context.tr('orders.printOrder')),
+            ),
+    );
+  }
+}
+
+enum _OrderAction { print, receive }
+
+/// Statuses the API accepts a reception for.
+bool _isReceivable(OrderResult order) =>
+    (order.status == 'APPROVED' || order.status == 'PROCESSING') &&
+    order.lines.any((line) => line.remaining > 0 && line.productId.isNotEmpty);
+
+/// Counts what actually arrived; defaults every line to what is still owed.
+class _ReceiveOrderDialog extends ConsumerStatefulWidget {
+  const _ReceiveOrderDialog({required this.order, required this.warehouseId});
+
+  final OrderResult order;
+  final String warehouseId;
+
+  @override
+  ConsumerState<_ReceiveOrderDialog> createState() =>
+      _ReceiveOrderDialogState();
+}
+
+class _ReceiveOrderDialogState extends ConsumerState<_ReceiveOrderDialog> {
+  // One key per dialog: a resend after a network error is the same reception.
+  final String _reference = const Uuid().v4();
+  late final List<OrderLineResult> _lines = widget.order.lines
+      .where((line) => line.remaining > 0 && line.productId.isNotEmpty)
+      .toList();
+  late final Map<String, int> _quantities = {
+    for (final line in _lines) line.productId: line.remaining,
+  };
+  bool _submitting = false;
+  String? _error;
+
+  int get _count => _quantities.values.fold(0, (sum, n) => sum + n);
+
+  void _set(OrderLineResult line, int quantity) {
+    setState(() {
+      _error = null;
+      _quantities[line.productId] = quantity.clamp(0, line.remaining);
+    });
+  }
+
+  Future<void> _submit() async {
+    if (_count == 0) return;
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    try {
+      final reference = await ref
+          .read(desktopApiProvider)
+          .receiveOrder(
+            clientReference: _reference,
+            warehouseId: widget.warehouseId,
+            orderId: widget.order.id,
+            quantities: _quantities,
+          );
+      if (!mounted) return;
+      Navigator.of(context).pop(reference);
+    } catch (error) {
+      if (!mounted) return;
+      final noAnswer =
+          error is DioException &&
+          (error.response == null || (error.response!.statusCode ?? 0) >= 500);
+      setState(() {
+        _submitting = false;
+        _error = noAnswer
+            ? context.tr('errors.receptionMaybeRecorded')
+            : toApiException(error).message;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    return AppDialog(
+      width: 640,
+      icon: Icons.inventory_2_rounded,
+      title: context.tr(
+        'orders.receiveTitle',
+        namedArgs: {'code': ltr(widget.order.code)},
+      ),
+      subtitle: context.tr('orders.receiveHint'),
+      onClose: _submitting ? () {} : null,
+      body: Column(
+        key: const ValueKey('order-receive'),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final line in _lines)
+            Padding(
+              padding: const EdgeInsets.only(bottom: Space.sm),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          line.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: text.labelLarge,
+                        ),
+                        Text(
+                          context.tr(
+                            'orders.receiveRemaining',
+                            namedArgs: {
+                              'sku': ltr(line.sku),
+                              'remaining': '${line.remaining}',
+                              'ordered': '${line.quantity}',
+                            },
+                          ),
+                          style: text.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                  QuantityField(
+                    key: ValueKey('receive-qty-${line.productId}'),
+                    fieldKey: ValueKey('receive-qty-field-${line.productId}'),
+                    value: _quantities[line.productId] ?? 0,
+                    max: line.remaining,
+                    onChanged: (n) => _set(line, n),
+                    onRemove: () => _set(line, 0),
+                  ),
+                ],
+              ),
+            ),
+          if (_error != null) ...[
+            const SizedBox(height: Space.sm),
+            InlineMessage(_error!, tone: Tone.danger),
+          ],
+        ],
+      ),
       secondary: TextButton(
-        onPressed: () => Navigator.of(context).pop(false),
-        child: Text(context.tr('common.close')),
+        onPressed: _submitting ? null : () => Navigator.of(context).pop(),
+        child: Text(context.tr('common.cancel')),
       ),
       primary: FilledButton.icon(
-        key: const ValueKey('order-details.print'),
-        onPressed: () => Navigator.of(context).pop(true),
-        icon: const Icon(Icons.print_rounded, size: 18),
-        label: Text(context.tr('orders.printOrder')),
+        key: const ValueKey('order-receive.confirm'),
+        onPressed: _submitting || _count == 0 ? null : _submit,
+        icon: _submitting
+            ? const ButtonSpinner()
+            : const Icon(Icons.check_rounded, size: 18),
+        label: Text(
+          context.tr(
+            'orders.receiveConfirm',
+            namedArgs: {'count': Fmt.integer(context, _count)},
+          ),
+        ),
       ),
     );
   }

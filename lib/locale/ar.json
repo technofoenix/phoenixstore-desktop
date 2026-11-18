@@ -99,7 +99,8 @@
       "VALIDATION_ERROR": "بعض المعلومات غير صالحة.",
       "INTERNAL_ERROR": "واجه الخادم مشكلة في معالجة الطلب. أعد المحاولة بعد قليل.",
       "CONFLICT": "هذا السجل موجود بالفعل."
-    }
+    },
+    "receptionMaybeRecorded": "مشكلة في الشبكة: ربما تم حفظ الاستلام بالفعل. اضغط على استلام مرة أخرى للتأكيد؛ لن يُحتسب مرتين."
   },
   "payment": {
     "CASH": "نقداً",
@@ -315,7 +316,13 @@
     "printOrder": "طباعة وصل الطلبية",
     "mainStock": "المستودع الرئيسي: {count}",
     "mainStockOut": "نفد من المستودع الرئيسي",
-    "mainStockLimit": "تبقى {count} فقط في المستودع الرئيسي لـ {name}."
+    "mainStockLimit": "تبقى {count} فقط في المستودع الرئيسي لـ {name}.",
+    "receive": "استلام المنتجات",
+    "receiveTitle": "استلام الطلب {code}",
+    "receiveHint": "عُدّ ما وصل. تُضاف الكميات إلى مخزون هذا المتجر.",
+    "receiveRemaining": "{sku} · {remaining} من {ordered} متبقية للاستلام",
+    "receiveConfirm": "استلام {count} قطعة",
+    "received": "تم استلام الطلب {code} وتحديث المخزون"
   },
   "charges": {
     "title": "مصاريف المحل",
